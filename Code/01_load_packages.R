@@ -19,6 +19,7 @@ if(!require(semPlot)) install.packages("semPlot", repos = "http://cran.us.r-proj
 if(!require(haven)) install.packages("haven", repos = "http://cran.us.r-project.org")
 if(!require(psych)) install.packages("psych", repos = "http://cran.us.r-project.org")
 if(!require(xlsx)) install.packages("xlsx", repos = "http://cran.us.r-project.org")
+if(!require(tidySEM)) install.packages("tidySEM", repos = "http://cran.us.r-project.org")
 
 library(lavaan) # CFA and SEM
 library(semTools) # additional toold for CFA and SEM 
@@ -33,5 +34,6 @@ library(psych) # descriptives
 library(labelled) # working with labelled data
 library(flextable) # formatting tables 
 library(xlsx) # export data into excel
+library(tidySEM) # for SEM plotting
 
 # End load packages
