@@ -20,6 +20,9 @@ if(!require(haven)) install.packages("haven", repos = "http://cran.us.r-project.
 if(!require(psych)) install.packages("psych", repos = "http://cran.us.r-project.org")
 if(!require(xlsx)) install.packages("xlsx", repos = "http://cran.us.r-project.org")
 if(!require(tidySEM)) install.packages("tidySEM", repos = "http://cran.us.r-project.org")
+if(!require(kableExtra)) install.packages("kableExtra", repos = "http://cran.us.r-project.org")
+if(!require(tidygraph)) install.packages("tidygraph", repos = "http://cran.us.r-project.org")
+if(!require(ggraph)) install.packages("ggraph", repos = "http://cran.us.r-project.org")
 
 library(lavaan) # CFA and SEM
 library(semTools) # additional toold for CFA and SEM 
@@ -35,5 +38,8 @@ library(labelled) # working with labelled data
 library(flextable) # formatting tables 
 library(xlsx) # export data into excel
 library(tidySEM) # for SEM plotting
+library(kableExtra) # for SEM plotting
+library(tidygraph) 
+library(ggraph)
 
 # End load packages
