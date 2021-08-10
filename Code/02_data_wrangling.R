@@ -1,5 +1,12 @@
 
-# Cleaning the datasets: ESENER 2015 and EWCS2015
+# 1 # Cleaning the datasets: ESENER 2015 and EWCS2015
+# 2 # Creating a policy dataset
+# 3 # Standardising relevant variables for linking datasets
+# 4 # filtering datasets for size, employees, and hours. 
+
+
+# 1 # Cleaning the datasets: ESENER 2015 and EWCS2015
+
 
 ## EWCS2015 - for JDR model 
 
@@ -10,20 +17,23 @@ EWCS2015_base <- read_spss("./Data/UKDA-8098-spss/spss/spss19/ewcs6_2015_ukda_19
 l_EWCS2015_base <- get_labels(EWCS2015_base, values = "n") # value labels
 q_EWCS2015_base <- as.data.frame(label(EWCS2015_base))
 
+
 ### items 
 
 items_EWCS2015 <- c(
   
   # filtering variables
   
+  "Q16b", # full company size (na 88, 99)
+  "nace_rev2_1", # industry 
+  
   "Q2a", # gender (dont know 9)
-  "isco_08_1", # occupation
-  "nace_rev2_1", # industry
   "Q2b", # age as a numeric value (na 888, 999)
   "Q2c", # filter for 1 = in employment (na 88, 99)
   "Q7", # filter for 1 = employee (na 8 and 9)
   "Q2d", # 1 = full time, 2 = part-time (na 8 and 9)
-  "Q24", # filter for hours per week if needed (na 888, 999)
+  "Q24", # filter for >= 20 hours per week  (na 888, 999)
+  "Q17", # years with your company
   
   # Linking variables 
   
@@ -91,11 +101,12 @@ items_EWCS2015 <- c(
 
 EWCS2015_items <- EWCS2015_base %>% select(all_of(items_EWCS2015)) %>% as_tibble()
 
+l_EWCS2015_items <- get_labels(EWCS2015_items, values = "n") # value labels
 q_EWCS2015_items <- as.data.frame(label(EWCS2015_items))
 
 ## cleaning the variables
 
-EWCS2015_sub1 <- EWCS2015_items %>% select(-c(Country, isco_08_1, nace_rev2_1)) %>%
+EWCS2015_sub1 <- EWCS2015_items %>% select(-c(Country, nace_rev2_1, Q17)) %>%
   set_na(na =c(8, 9), drop.levels = TRUE, as.tag = FALSE) %>% 
   as_tibble(.)
 
@@ -103,14 +114,21 @@ EWCS2015_sub1 <- EWCS2015_sub1 %>% set_na(na =c(Q61o = 7, Q61g = 7, Q61a = 7, Q7
                                                 Q63b = 7, Q63c = 7, Q63d = 7, Q63e = 7, Q63f = 7, Q61f = 7, Q61i = 7,
                                                 Q61c = 7, Q61d = 7, Q61n = 7, Q61m = 7,
                                                 Q50a = 7 , Q50b = 7, Q50c = 7, Q50d = 7, Q50e = 7,
-                                                Q2b = c(888, 999), Q24 = c(888, 999)), 
+                                                Q2b = c(888, 999), Q24 = c(888, 999), Q16b = c(88, 99)), 
                                           drop.levels = TRUE, as.tag = FALSE) %>% as_tibble(.)
 
-EWCS2015_sub2 <- EWCS2015_items %>% select(Country, isco_08_1, nace_rev2_1) %>% as_tibble(.)
+EWCS2015_sub2 <- EWCS2015_items %>% 
+  select(Country, nace_rev2_1, Q17) %>% 
+  set_na(na = c(Q17 = c(77, 99, 88))) %>% 
+  as_tibble(.)
+
 
 ## working dataset
 
 EWCS2015_items <- cbind(EWCS2015_sub2, EWCS2015_sub1) # working dataset
+
+l_EWCS2015_items <- get_labels(EWCS2015_items, values = "n") # value labels
+q_EWCS2015_items <- as.data.frame(label(EWCS2015_items))
 
 
 ### Recode variables - the higher, the more
@@ -132,9 +150,29 @@ EWCS2015_items$Q61m <- dplyr::recode_factor(EWCS2015_items$Q61m, `1` = 100, `2` 
 
 ##### rename the outcomes variables
 
-EWCS2015_items <- EWCS2015_items %>% dplyr::mutate(experience_stress = Q61m,
+EWCS2015_items <- EWCS2015_items %>% rename(experience_stress = Q61m,
                                     experience_harassment = Q81c,
                                     experience_violence = Q81a)
+
+
+#### recode and rename gender, age, size, sector, and job type
+
+EWCS2015_items  <- EWCS2015_items %>% rename(country = Country, industry = nace_rev2_1, size_ewcs = Q16b, 
+                                             sex = Q2a, age = Q2b, 
+                                             employment_status = Q2c, worker_type = Q7, contract = Q2d, hours = Q24,
+                                             experience = Q17) 
+
+EWCS2015_items$sex <- dplyr::recode_factor(EWCS2015_items$sex, `1` = 0, `2` = 1) %>% 
+  replace_labels(EWCS2015_items$sex, labels = c("Female" = 1, "Male" = 0)) %>% as_numeric(., drop.levels = TRUE)  # female = 1
+
+EWCS2015_items$contract <- dplyr::recode_factor(EWCS2015_items$contract, `1` = 0, `2` = 1) %>% 
+  replace_labels(EWCS2015_items$contract, labels = c("Full time" = 1, "Part time" = 0)) %>% as_numeric(., drop.levels = TRUE)  # full time = 1
+
+EWCS2015_items$experience <- dplyr::recode(EWCS2015_items$experience, `999` = 0) %>% 
+  as_numeric(., drop.levels = TRUE)  # less than a year = 0
+
+
+l_EWCS2015_items <- get_labels(EWCS2015_items, values = "n") # update value labels
 
 
 #### job  resources
@@ -323,11 +361,11 @@ EWCS2015_items$Q51 <- dplyr::recode_factor(EWCS2015_items$Q51, `1` = 100, `2` = 
                                                 "Never" = 0)) %>% as_numeric(., drop.levels = TRUE)
 
 EWCS2015_items$Q61g <- dplyr::recode_factor(EWCS2015_items$Q61g, `1` = 0, `2` = 25, `3` = 50, `4` = 75, `5` = 100) %>% 
-  replace_labels(EWCS2015_items$Q61g, labels = c("Always" = 100, 
-                                                 "Most of the time" = 75, 
+  replace_labels(EWCS2015_items$Q61g, labels = c("Never" = 100, 
+                                                 "Rarely" = 75, 
                                                  "Sometimes" = 50, 
-                                                 "Rarely" = 25, 
-                                                 "Never" = 0)) %>% as_numeric(., drop.levels = TRUE)
+                                                 "Most of the time" = 25, 
+                                                 "Always" = 0)) %>% as_numeric(., drop.levels = TRUE)
 
 ##### Pace determinats
 EWCS2015_items$Q50a <- dplyr::recode_factor(EWCS2015_items$Q50a,`1` = 100, `2` = 0) %>% 
@@ -345,12 +383,12 @@ EWCS2015_items$Q50d <- dplyr::recode_factor(EWCS2015_items$Q50d,`1` = 100, `2` =
 EWCS2015_items$Q50e <- dplyr::recode_factor(EWCS2015_items$Q50e,`1` = 100, `2` = 0) %>% 
   replace_labels(EWCS2015_items$Q50e, labels = c("Yes" = 100, "No" = 0)) %>% as_numeric(., drop.levels = TRUE)# YES = 1 and NO = 0
 
-### Saving the resulting dataset 
+### updating variable names and values list
 
-save(EWCS2015_items, file = "./Data/Working_data/EWCS2015_items.rda") # r data
+l_EWCS2015_items <- get_labels(EWCS2015_items, values = "n") # value labels
 
 
-############################################################################################################################
+#####################################################
 
 ## ESENER 2014 - To estimate organisational practices
 
@@ -369,6 +407,11 @@ items_ESENER14 <- c(
   
   "country",
   
+  # filtering variable 
+  
+  "Size", # full company size based on directly on directly employed people (2 = 10-49)
+  "Nace1", # industry 
+  
   # Organisational practices indicators
   
   "Q300", # Does your establishment have an action plan to prevent work-related stress? [If Q104 >19 and <99999]
@@ -376,34 +419,32 @@ items_ESENER14 <- c(
   "Q302" # And is there a procedure to deal with possible cases of threats, abuse or assaults by clients, patients, pupils or other external persons? [If Q104 >19 and <99999 and Q201_5 = 1]
 )
 
+
 ### selecting the variables from the original dataset
 
 ESENER14_items <- ESENER14_base %>% select(all_of(items_ESENER14)) %>% as_tibble()
 
 ### rename the variables
 
-ESENER14_items <- ESENER14_items %>% dplyr::mutate(practice_stress = Q300,
-                                                   practice_harassment = Q301,
-                                                   practice_violence = Q302)
+ESENER14_items <- ESENER14_items %>% 
+  dplyr::rename(size_esener = Size, industry = Nace1,
+                practice_stress = Q300, practice_harassment = Q301, practice_violence = Q302)
 
-### selecting only the relevant variables. 
-
-ESENER14_items <- ESENER14_items %>% select(country, practice_stress, practice_harassment, practice_violence)
 
 ### extracting variable labels 
 
 l_ESENER14_items <- get_labels(ESENER14_items, values = "n") # value labels
 q_ESENER14_items <- as.data.frame(label(ESENER14_items)) # questions
 
-write.xlsx(q_ESENER14_items, file = "./Data/Working_data/q_ESENER14.xlsx") # export questions to excel
 
 ### creating no answers as NA's only for items
 
-ESENER14_sub1 <- ESENER14_items %>% select(country)
+ESENER14_sub1 <- ESENER14_items %>% select(country, size_esener, industry) %>% 
+  set_na(na = c(industry = 99), drop.levels = TRUE, as.tag = FALSE) %>% as_tibble(.)  
 
-ESENER14_sub2 <- ESENER14_items %>% select(-c(country)) %>% 
-  set_na(na = c(practice_stress = 9, practice_harassment = 9, Q302 = 9), drop.levels = TRUE, as.tag = FALSE) %>% 
-  as_tibble(.)
+ESENER14_sub2 <- ESENER14_items %>% select(-c(country, size_esener, industry)) %>% 
+  set_na(na = c(practice_stress = 9, practice_harassment = 9, practice_violence = 9), 
+         drop.levels = TRUE, as.tag = FALSE) %>% as_tibble(.)
 
 ESENER14_items <- cbind(ESENER14_sub1, ESENER14_sub2)
 
@@ -418,31 +459,13 @@ ESENER14_items$practice_harassment <- dplyr::recode_factor(ESENER14_items$practi
 ESENER14_items$practice_violence <- dplyr::recode_factor(ESENER14_items$practice_violence, `1` = 100, `2` = 0) %>% 
   replace_labels(ESENER14_items$practice_violence, labels = c("Yes" = 100, "No" = 0)) %>% as_numeric(., drop.levels = TRUE)
 
-
-# Standardising country variable to link with  EWCS2015
-
-val_labels(ESENER14_base$country)
-val_labels(EWCS2015_items$Country)
-
-ESENER14_items$country <- dplyr::recode_factor(ESENER14_items$country, `1` = 35, `2` = 1, `3` = 2, `4` = 3, `5` = 34, `6` = 5, `7` = 6, `8` = 11, 
-                                               `9` = 7, `10`= 8, `11`= 12, `12`= 26, `13`= 9, `14`= 10, `15`= 4, `16`= 13, `17`= 14, `18`= 999, 
-                                               `19`= 15, `20`= 17, `21`= 18, `22`= 16, `23`= 29, `24`= 30, `25`= 19, `26`= 20, `27`= 33, `28`= 21,
-                                               `29`= 22, `30`= 23, `31`= 31, `32`= 27, `33`= 25, `34`= 24, `35`= 32, `36`= 28) 
-
-ESENER14_items$country <- replace_labels(ESENER14_items$country, labels = c( "Albania"=35, "Austria"=1, "Belgium"=2, "Bulgaria"=3, 
-                                                                             "Switzerland"=34, "Cyprus"=5, "Czech Republic"=6, "Germany"=11, 
-                                                                             "Denmark"=7, "Estonia"=8, "Greece"=12, "Spain"=26, "Finland"=9, 
-                                                                             "France"=10, "Croatia"= 4, "Hungary"=13, "Ireland"=14, "Iceland"=999,
-                                                                             "Italy"=15, "Lithuania"=17, "Luxembourg"=18, "Latvia"=16, "Montenegro"=29, 
-                                                                             "FYROM"=30, "Malta"=19, "Netherlands"=20, "Norway"=33, "Poland"=21, 
-                                                                             "Portugal"=22, "Romania"=23, "Serbia"=31, "Sweden"=27, "Slovenia"=25, 
-                                                                             "Slovakia"=24, "Turkey"=32, "UK"=28)) %>% as_numeric(., drop.levels = TRUE)
+l_ESENER14_items <- get_labels(ESENER14_items, values = "n") # value labels
 
 
-### Saving the resulting dataset for the data reduction step
 
-save(ESENER14_items, file = "./Data/Working_data/ESENER14_items.rda") # r data
-write.xlsx(ESENER14_items, file = "./Data/Working_data/ESENER14_items.xlsx") # excel file
+#############################################################
+
+# 2 # Creating a policy dataset
 
 # Policy index 
 
@@ -512,9 +535,107 @@ policy_index <- policy_index %>% mutate(law_stress_yes = recode_factor(law_stres
 
 get_labels(policy_index$law_stress_yes, values = "n") # check
 
+## save policy index database
+
 save(policy_index, file = "./Data/Working_data/policy_index.rda") # r data
 write.xlsx(policy_index, file = "./Data/Working_data/policy_index.xlsx") # excel file
 
+
+
+# 3 # Standardising relevant variables for linking datasets
+
+## Country - taking EWCS2015 as the baseline values
+
+val_labels(EWCS2015_items$country)
+val_labels(ESENER14_items$country)
+
+ESENER14_items$country <- dplyr::recode_factor(ESENER14_items$country, `1` = 35, `2` = 1, `3` = 2, `4` = 3, `5` = 34, `6` = 5, `7` = 6, `8` = 11, 
+                                               `9` = 7, `10`= 8, `11`= 12, `12`= 26, `13`= 9, `14`= 10, `15`= 4, `16`= 13, `17`= 14, `18`= 999, 
+                                               `19`= 15, `20`= 17, `21`= 18, `22`= 16, `23`= 29, `24`= 30, `25`= 19, `26`= 20, `27`= 33, `28`= 21,
+                                               `29`= 22, `30`= 23, `31`= 31, `32`= 27, `33`= 25, `34`= 24, `35`= 32, `36`= 28) 
+
+ESENER14_items$country <- replace_labels(ESENER14_items$country, labels = c( "Albania"=35, "Austria"=1, "Belgium"=2, "Bulgaria"=3, 
+                                                                             "Switzerland"=34, "Cyprus"=5, "Czech Republic"=6, "Germany"=11, 
+                                                                             "Denmark"=7, "Estonia"=8, "Greece"=12, "Spain"=26, "Finland"=9, 
+                                                                             "France"=10, "Croatia"= 4, "Hungary"=13, "Ireland"=14, "Iceland"=999,
+                                                                             "Italy"=15, "Lithuania"=17, "Luxembourg"=18, "Latvia"=16, "Montenegro"=29, 
+                                                                             "FYROM"=30, "Malta"=19, "Netherlands"=20, "Norway"=33, "Poland"=21, 
+                                                                             "Portugal"=22, "Romania"=23, "Serbia"=31, "Sweden"=27, "Slovenia"=25, 
+                                                                             "Slovakia"=24, "Turkey"=32, "UK"=28)) %>% as_labelled()
+
+ESENER14_items <- ESENER14_items %>% filter(country != 999) # removing Iceland
+
+
+## company size - ESENER and EWCS need to be standardised 
+
+val_labels(ESENER14_items$size_esener)
+val_labels(EWCS2015_items$size_ewcs)
+
+ESENER14_items$size_esener <- dplyr::recode_factor(ESENER14_items$size_esener, `1` = 1, `2` = 2, `3` = 2, `4` = 3) %>% 
+  replace_labels(ESENER14_items$size_esener, labels = c("9 or less" = 1, "10-249" = 2, "250+" = 3)) %>% as_labelled()
+
+EWCS2015_items$size_ewcs <- dplyr::recode_factor(EWCS2015_items$size_ewcs, `1` = 1, `2` = 1, `3` = 2, `4` = 3) %>% 
+  replace_labels(EWCS2015_items$size_ewcs, labels = c("9 or less" = 1, "10-249" = 2, "250+" = 3)) %>% as_labelled()
+
+
+## industry
+
+val_labels(ESENER14_items$industry)
+val_labels(EWCS2015_items$industry)
+
+ESENER14_items$industry <- replace_labels(ESENER14_items$industry, labels = c("A Agriculture, forestry and fishing" = 1 ,
+                                                                              "B Mining and quarrying" = 2,
+                                                                              "C Manufacturing" = 3,
+                                                                              "D Electricity, gas, steam and air conditioning supply" = 4,
+                                                                              "E Water supply; sewerage, waste management and remediation activities" = 5,
+                                                                              "F Construction" = 6,
+                                                                              "G Wholesale and retail trade; repair of motor vehicles and motorcycles" = 7,
+                                                                              "H Transportation and storage" = 8,
+                                                                              "I Accommodation and food service activities" = 9,
+                                                                              "J Information and communication" = 10,
+                                                                              "K Financial and insurance activities" = 11,
+                                                                              "L Real estate activities" = 12,
+                                                                              "M Professional, scientific and technical activities" = 13,
+                                                                              "N Administrative and support service activities" = 14,
+                                                                              "O Public administration and defence; compulsory social security" = 15,
+                                                                              "P Education" = 16,
+                                                                              "Q Human health and social work activities" = 17,
+                                                                              "R Arts, entertainment and recreation" = 18,
+                                                                              "S Other service activities" = 19)) %>% as_labelled()
+
+
+### filtering databases by size and employment criteria 
+
+#### ESENER
+
+ESENER14_filtered <- ESENER14_items %>% filter(size_esener != 1) # equal or more than 10-49 employees
+
+ESENER14_filtered %>% group_by(country) %>% summarise(total = n()) %>% knitr::kable()  # summary per country
+
+#### EWCS 
+
+EWCS2015_filtered <- EWCS2015_items %>% filter(size_ewcs != 1) # more then 10 employees company size
+
+EWCS2015_filtered <- EWCS2015_filtered %>% filter(employment_status == 1 & worker_type == 1 & hours >= 20) # in employment, employee, 20 or more hours
+
+EWCS2015_filtered %>% group_by(size_ewcs) %>% summarise(total = n()) %>% knitr::kable()  # summary per country
+
+
+### saving ready to link datasets
+
+policy_ready <- policy_index
+
+JDR_ready <- EWCS2015_filtered
+
+practices_ready <- ESENER14_filtered
+
+save(policy_ready, file = "./Data/Working_data/policy_ready.rda") # r data
+
+save(JDR_ready, file = "./Data/Working_data/JDR_ready.rda") # r data for CFA
+
+save(practices_ready, file = "./Data/Working_data/practices_ready.rda") # r data
+
 # End data wrangling 
 
-rm(list = ls()) # delete workspace to save memory
+rm(list = ls())
+
