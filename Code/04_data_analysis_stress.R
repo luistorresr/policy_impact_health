@@ -12,6 +12,8 @@ policy_stress <- policy_ready %>% select(country, law_stress_yes)
 
 rm(policy_ready)
 
+policy_stress %>% arrange(country) %>% group_by(as_label(country)) %>% print(n=35)
+
 ### from practices_ready
 
 practices_stress <- practices_ready %>% select(-c(practice_harassment, practice_violence))
@@ -80,18 +82,30 @@ rm(comb_JDR_practice, JDR_stress_outcome, policy_stress, practices_country, prac
 
 # Correlation matrix
 
-options(digits = 2)
+options(digits = 4)
 
-stress_corr <- combined_stress %>% select(law_stress_yes, industry_index, experience_stress,
-                                               avg_emot_d, avg_quant_d, avg_pace_d,
-                                               avg_jobctrl_r, avg_parti_r, avg_col_r, avg_super_r,
-                                               avg_demands, avg_resources,
-                                               size, sex, age, hours, experience) %>% 
+stress_corr <- combined_stress %>% select(law_stress_yes, csize_index, experience_stress,
+                                         avg_demands, avg_resources,
+                                         hours, age, experience, size, sex) %>% 
   as.matrix(.) %>%
   rcorr(., type = c("pearson"))
 
 knitr::kable(stress_corr$r) %>% kable_styling()
 knitr::kable(stress_corr$P) %>% kable_styling()
+
+
+# descriptives
+
+options(digits = 3)
+
+combined_stress %>% summarise(mean = mean(na.omit(c(csize_index))), sd = sd(na.omit(csize_index)))
+combined_stress %>% summarise(mean = mean(na.omit(experience_stress)), sd = sd(na.omit(experience_stress)))
+combined_stress %>% summarise(mean = mean(na.omit(avg_demands)), sd = sd(na.omit(avg_demands)))
+combined_stress %>% summarise(mean = mean(na.omit(avg_resources)), sd = sd(na.omit(avg_resources)))
+combined_stress %>% summarise(mean = mean(na.omit(hours)), sd = sd(na.omit(hours)))
+combined_stress %>% summarise(mean = mean(na.omit(age)), sd = sd(na.omit(age)))
+combined_stress %>% summarise(mean = mean(na.omit(experience)), sd = sd(na.omit(experience)))
+
 
 # Models
 
@@ -127,9 +141,9 @@ model_stress_1 <- '
                     
                     # controls 
                             csize_index ~ size
-                            experience_stress ~ size + hours + age
-                            avg_demands ~ size + hours + experience + age
-                            avg_resources ~ size + experience + age
+                            experience_stress ~ size + hours + experience + age + sex
+                            avg_demands ~ size + hours + experience + age + sex
+                            avg_resources ~ size + hours + experience + age + sex
 
                     # covariances 
                             avg_demands ~~ avg_resources '
@@ -138,29 +152,66 @@ stress_path_1 <- sem(model_stress_1, data = combined_stress, estimator = "MLR",
                    group = NULL, 
                    se = "robust",
                    test = "boot",
-                   bootstrap = 1000)
+                   bootstrap = 1000) ##### bias corrected bootstrap
 
 summary(stress_path_1, fit.measures = TRUE, standardized = TRUE, rsquare = TRUE, modindices = TRUE)
 standardizedsolution(stress_path_1)
 
-##### bias corrected bootstrap
-lavaan::parameterEstimates(stress_path_1, zstat = TRUE, pvalue = TRUE, ci = TRUE, level = 0.95, 
-                   boot.ci.type = "bca.simple", standardized = FALSE, remove.system.eq = TRUE, 
-                   remove.eq = TRUE, remove.ineq = TRUE, remove.def = FALSE, rsquare = FALSE, add.attributes = FALSE)
 
 
+## Model 2: Mediation analysis 
 
-## Model 1: multigroup analysis = sex
+model_stress_2 <- '
+                   # direct effect
+      
+                        # direct effect - practice on stress
+                            
+                            experience_stress ~ d1*csize_index
+                            
+                        
+                        # JDR on outcome
+                            experience_stress ~ i2*avg_demands
+                            experience_stress ~ i3*avg_resources
+                        
+                        # organisational practices on JDR
+                            avg_demands ~ i4*csize_index
+                            avg_resources ~ i5*csize_index
+                        
+                     # indirect effect
+                            ind_demands := i2*i4
+                            ind_resources := i3*i5
+                        
+                     # total effect
+                            tot_demands := d1 + (i2*i4)
+                            tot_resources := d1 + (i3*i5) 
+                    
+                    # controls 
+                            csize_index ~ size
+                            experience_stress ~ size + hours + experience + age + sex
+                            avg_demands ~ size + hours + experience + age + sex
+                            avg_resources ~ size + hours + experience + age + sex
 
-combined_stress_no_na_sex <- combined_stress %>% filter(!is.na(sex))
+                    # covariances 
+                            avg_demands ~~ avg_resources '
 
-stress_path_2 <- sem(model_stress_1, data = combined_stress_no_na_sex, estimator = "MLR", 
-                     group = "sex", group.label = 1,
+stress_path_2 <- sem(model_stress_2, data = combined_stress, estimator = "MLR", 
+                     group = "law_stress_yes", 
+                     group.label = 100,
                      se = "robust",
                      test = "boot",
-                     bootstrap = 1000)
+                     bootstrap = 1000) ##### bias corrected bootstrap
 
-summary(stress_path_2, fit.measures = TRUE, standardized = TRUE, rsquare = TRUE, modindices = TRUE)
+summary(stress_path_2, fit.measures = TRUE, standardized = TRUE, rsquare = TRUE, modindices = FALSE)
 standardizedsolution(stress_path_2)
+
+
+
+
+
+
+
+
+
+
 
 
