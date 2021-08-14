@@ -620,6 +620,9 @@ EWCS2015_filtered <- EWCS2015_filtered %>% filter(employment_status == 1 & worke
 
 EWCS2015_filtered %>% group_by(size_ewcs) %>% summarise(total = n()) %>% knitr::kable()  # summary per country
 
+EWCS2015_filtered %>% count(sex) %>% summarise(percentage = n / sum(n) * 100) # sex percentage
+
+EWCS2015_filtered %>% filter(!is.na(age)) %>% summarise(mean_age = mean(age), sd_age = sd(age)) # sex percentage
 
 ### saving ready to link datasets
 
@@ -637,5 +640,5 @@ save(practices_ready, file = "./Data/Working_data/practices_ready.rda") # r data
 
 # End data wrangling 
 
-rm(list = ls())
+#rm(list = ls())
 

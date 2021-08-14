@@ -78,4 +78,4 @@ save(JDR_clean, file = "./Data/Working_data/JDR_clean.rda") # r data
 
 # end data reduction
 
-rm(list = ls()) # to save memory
+#rm(list = ls()) # to save memory
