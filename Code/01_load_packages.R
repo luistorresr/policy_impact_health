@@ -14,17 +14,16 @@ if(!require(sjmisc)) install.packages("sjmisc", repos = "http://cran.us.r-projec
 if(!require(flextable)) install.packages("flextable", repos = "http://cran.us.r-project.org")
 if(!require(lavaan)) install.packages("lavaan", repos = "http://cran.us.r-project.org")
 if(!require(semTools)) install.packages("semTools", repos = "http://cran.us.r-project.org")
-if(!require(semPlot)) install.packages("semPlot", repos = "http://cran.us.r-project.org")
 if(!require(haven)) install.packages("haven", repos = "http://cran.us.r-project.org")
 if(!require(psych)) install.packages("psych", repos = "http://cran.us.r-project.org")
 if(!require(xlsx)) install.packages("xlsx", repos = "http://cran.us.r-project.org")
 if(!require(kableExtra)) install.packages("kableExtra", repos = "http://cran.us.r-project.org")
 if(!require(e1071)) install.packages("e1071", repos = "http://cran.us.r-project.org")
 if(!require(gvlma)) install.packages("gvlma", repos = "http://cran.us.r-project.org")
+if(!require(janitor)) install.packages("janitor", repos = "http://cran.us.r-project.org")
 
 library(lavaan) # CFA and SEM
 library(semTools) # additional toold for CFA and SEM 
-library(semPlot) # plots for CFA and SEM
 library(sjmisc) # useful to set Na's
 library(haven) # read SPSS, Stata, and SAS data
 library(tidyverse) # several tools for data manipulation
@@ -37,6 +36,8 @@ library(xlsx) # export data into excel
 library(kableExtra) # for SEM plotting
 library(gvlma) # assumptions checks
 library(e1071) # skewness
+library(janitor) # add totals to tables
+
 
 
 # End load packages
