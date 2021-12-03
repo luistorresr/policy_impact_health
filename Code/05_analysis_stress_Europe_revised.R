@@ -22,7 +22,7 @@ rm(practices_ready)
 
 ### from JDR ready
 
-JDR_stress_outcome <- JDR_clean %>% select(-c(experience_harassment, experience_violence))
+JDR_stress_outcome <- JDR_clean %>% as_tibble()
 
 rm(JDR_clean)
 
@@ -33,7 +33,8 @@ practices_stress <- practices_stress %>% rename(size = size_esener) # change siz
 
 practices_country <- practices_stress %>% 
   group_by(country) %>%
-  summarise(country_index = mean(na.omit(practice_stress))) # per country
+  summarise(country_index = mean(na.omit(practice_stress)))  # per country
+
 
 practices_industry <- practices_stress  %>% 
   group_by(country, industry) %>%
@@ -62,6 +63,11 @@ practices_index$csize_index <- ifelse(is.na(practices_index$csize_index),
 
 JDR_stress_outcome <- JDR_stress_outcome %>% rename(size = size_ewcs)
 
+class(practices_index$country)
+class(JDR_stress_outcome$country)
+
+practices_index$country <- as_labelled(practices_index$country) # change the type so they can be linked
+
 comb_JDR_practice <- left_join(JDR_stress_outcome, practices_index, by = c("country", "industry", "size"))
 
 
@@ -79,8 +85,27 @@ save(combined_stress, file = "./Data/Working_data/combined_stress .rda") # r dat
 rm(comb_JDR_practice, JDR_stress_outcome, policy_stress, practices_country, practices_index, practices_index_temp, practices_industry,
    practices_size, practices_stress)
 
-
 combined_stress %>% nrow()
+
+# Summary 
+
+summary_combined1 <- combined_stress %>% 
+  group_by(as_label(law_stress_yes), as_label(size)) %>% 
+  summarise(mean_index = mean(na.omit(csize_index))) %>% 
+  rename(law = `as_label(law_stress_yes)`, size = `as_label(size)`, ) %>% 
+  pivot_wider(names_from = size, values_from = mean_index) %>%
+  group_by(law) %>%
+  mutate(mean_law = (`10-249` + `250+`)/ 2)
+
+summary_combined2 <- combined_stress %>% 
+  filter(!is.na(sex)) %>% 
+  group_by(as_label(law_stress_yes), as_label(sex)) %>% 
+  summarise(mean_index = mean(na.omit(csize_index))) %>% 
+  rename(law = `as_label(law_stress_yes)`, sex = `as_label(sex)`, ) %>% 
+  pivot_wider(names_from = sex, values_from = mean_index) %>%
+  group_by(law) %>%
+  mutate(mean_law = (`Male` + `Female`)/ 2)
+
 
 # Correlation matrix
 
@@ -147,7 +172,7 @@ plot.gvlma(linear_law)
 
 
 
-# Original models
+# Models
 
 ## Model 1 mediation: using the resource and demand averages
 
@@ -169,8 +194,8 @@ model_stress_1 <- '
                         # Law on organisational practices
                             csize_index ~ law_stress_yes
 
-                    # covariances 
-                            avg_demands ~~ avg_resources 
+                       # covariances 
+                           avg_demands ~~ avg_resources
                                                   '
 
 stress_path_1 <- sem(model_stress_1, data = combined_stress, estimator = "MLR", 
@@ -205,6 +230,16 @@ model_stress_2  <- '
 
                     # covariances 
                             avg_demands ~~ avg_resources '
+
+multigroup <- sem(model_stress_2, data = combined_stress, estimator = "MLR",
+                   group = "law_stress_yes",
+                   group.label = NULL,
+                   se = "robust",
+                   test = "bootstrap",
+                   bootstrap = 1000) # no law
+
+summary(multigroup, fit.measures = TRUE, standardized = TRUE, rsquare = TRUE, modindices = FALSE)
+standardizedsolution(multigroup)
 
 
 ## Free vs constrained model - overall
@@ -381,7 +416,7 @@ lavTestLRT(free__model, full_demands_path) # scaled chi-squared difference test
 
 ### resources path
 
-#### index to demands - Significant 
+#### index to resources - Significant 
 
 model_index_resources  <- '
                     # direct effect
@@ -418,7 +453,7 @@ lavTestLRT(free__model, index_resources__path) # scaled chi-squared difference t
 
 
 
-#### demands to stress - No significant 
+#### resources to stress - No significant 
 
 model_resources_stress  <- '
                     # direct effect
@@ -492,8 +527,7 @@ lavTestLRT(free__model, full_resources_path) # scaled chi-squared difference tes
 
 
 
-
-## Conditional mediation analysis
+## Conditional mediation analysis - Not reported
 
 model_stress_3 <- '
                     # direct effect
