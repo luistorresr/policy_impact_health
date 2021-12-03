@@ -43,20 +43,12 @@ fit_jdr <- lavaan::cfa(m_jdr, data = wdata,
                                   "Q61a", "Q70e", "Q89d",
                                   "Q61b", "Q63a", "Q63b", "Q63c", "Q63d", "Q63e", "Q63f"))
 
-summary_jdr <- summary(fit_jdr, fit.measures = TRUE, standardized = TRUE, rsquare = TRUE, modindices = TRUE)
-fitm_jdr <- fitMeasures(fit_jdr)
+summary(fit_jdr, fit.measures = TRUE, standardized = TRUE, rsquare = TRUE, modindices = TRUE)
+fitMeasures(fit_jdr)
 standardizedSolution(fit_jdr, type = "std.all", se = TRUE, zstat = TRUE, pvalue = TRUE, remove.eq = TRUE, remove.ineq = TRUE, remove.def = FALSE)
 resid(fit_jdr, "cor") # covariance of the residuals
 fitted(fit_jdr) # implied moments
-semPaths(fit_jdr, "model", "std", intercepts = FALSE) # Plots
-rel_jdr <- semTools::reliability(fit_jdr)
-
-#### export to excel results of CFA
-
-write.xlsx(summary_jdr$PE,"./Results/CFA/jdrfactors_loadings.xlsx")
-write.xlsx(fitm_jdr,"./Results/CFA/jdrfactors_modelfit.xlsx")
-write.xlsx(rel_jdr,"./Results/CFA/jdrfactors_reliability.xlsx")
-
+semTools::reliability(fit_jdr)
 
 ### composite index (mean per person)
 
