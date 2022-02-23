@@ -21,6 +21,12 @@ if(!require(kableExtra)) install.packages("kableExtra", repos = "http://cran.us.
 if(!require(e1071)) install.packages("e1071", repos = "http://cran.us.r-project.org")
 if(!require(gvlma)) install.packages("gvlma", repos = "http://cran.us.r-project.org")
 if(!require(janitor)) install.packages("janitor", repos = "http://cran.us.r-project.org")
+if(!require(lme4)) install.packages("lme4", repos = "http://cran.us.r-project.org")
+if(!require(lmerTest)) install.packages("lmerTest", repos = "http://cran.us.r-project.org")
+if(!require(sjstats)) install.packages("sjstats", repos = "http://cran.us.r-project.org")
+if(!require(multilevelTools)) install.packages("multilevelTools", repos = "http://cran.us.r-project.org")
+if(!require(mlma)) install.packages("mlma", repos = "http://cran.us.r-project.org")
+if(!require(misty)) install.packages("misty", repos = "http://cran.us.r-project.org")
 
 library(lavaan) # CFA and SEM
 library(semTools) # additional toold for CFA and SEM 
@@ -33,11 +39,20 @@ library(psych) # descriptives
 library(labelled) # working with labelled data
 library(flextable) # formatting tables 
 library(xlsx) # export data into excel
+library(openxlsx) 
+library(expss)
 library(kableExtra) # for SEM plotting
 library(gvlma) # assumptions checks
 library(e1071) # skewness
 library(janitor) # add totals to tables
 
+library(lme4) # multilevel modeling 
+library(lmerTest)
+library(sjstats) # intraclass correlation
+library(multilevelTools)
+library(misty)
 
+
+memory.limit(size = 1000000)
 
 # End load packages
