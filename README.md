@@ -1,4 +1,4 @@
-# The impact of legislation on employee well-being: Data and analysis of 35 European Countries. 
+# The impact of legislation on employee well-being: Data and analysis of work-related stress for 35 European Countries. 
 
 This is the data and analysis for the paper:
 
